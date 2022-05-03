@@ -2,8 +2,7 @@
 Chat application, implemented using asynchronous Boost::Asio library with handful of modern C++ features.
 Built using CMake.
 
-## Usage
-⚠️ The project is too raw to be used. Both client and server is full of bugs.
+## Building the project
 
 1. Create a folder to build the project: `mkdir build`
 2. Go to that folder: `cd build`
@@ -22,3 +21,7 @@ The framework (`framework` folder):
 * `ThreadSafeDeque.h` -- Thread-safe Deque, implemented using std::mutex and std::scoped_lock. 
 * `Client.h` -- Implementation of Client
 * `Server.h` -- Server's implementation
+
+## Usage
+TODO
+⚠️ The project is too raw to be used. Both client and server are full of bugs.
