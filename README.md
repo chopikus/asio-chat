@@ -1,2 +1,2 @@
-# day-time
-Daytime server and client, written using Boost::Asio.
+# asio-chat
+Chat application written implemented using Boost::Asio library with handful of modern C++ features.
