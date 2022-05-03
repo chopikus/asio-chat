@@ -16,7 +16,7 @@ namespace MyFramework {
             }
 
             bool Start() {
-                std::cout << "[SERVER] I Started!" << std::endl;
+                std::cout << " I Started!" << std::endl;
                 WaitForClientConnection();
                 threadContext = std::thread([this]() { asioContext.run();});
                 return false;
@@ -26,28 +26,27 @@ namespace MyFramework {
                 asioContext.stop();
                 if (threadContext.joinable()) threadContext.join();
 
-                std::cout << "[SERVER] I stopped!" << std::endl;
+                std::cout << " I stopped!" << std::endl;
             }
 
             // ASYNC
             void WaitForClientConnection() {
                 asioAcceptor.async_accept([this](std::error_code ec, tcp::socket socket) {
                     if (!ec) {
-                        std::cout << "[SERVER] New connection: " << socket.remote_endpoint() << std::endl;
-                        //Connection<T> connection = Connection<T>(Connection<T>::Owner::SERVER, asioContext, std::move(socket), qMessagesIn);
+                        std::cout << " New connection: " << socket.remote_endpoint() << std::endl;
                         std::shared_ptr<Connection<T>> new_connection = 
                         std::make_shared<Connection<T>>(Connection<T>::Owner::SERVER, asioContext, std::move(socket), qMessagesIn);
                         // check whether the user is appropriate
                         if (OnClientConnect(new_connection)) {
                             dequeConnections.push_back(std::move(new_connection));
                             dequeConnections.back()->ConnectToClient(++idCounter);
-                            std::cout << "[SERVER] [" << idCounter << "] Connection approved!" << std::endl;
+                            std::cout << " [" << idCounter << "] Connection approved!" << std::endl;
                         } else {
                             std::cout << "Connection denied!" << std::endl;
                         }
                         
                     } else {
-                        std::cout << "[SERVER] New connection error: " << ec.message() << std::endl;
+                        std::cout << " New connection error: " << ec.message() << std::endl;
                     }
                     WaitForClientConnection();
                 });

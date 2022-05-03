@@ -9,7 +9,9 @@ project(AsioChat VERSION 1.0)
 # add the executable
 find_package( Boost REQUIRED COMPONENTS system coroutine regex)
 include_directories( ${Boost_INCLUDE_DIRS} )
-add_executable( run main.cpp ) # Example application based on main.cpp
+add_executable( server server.cpp )
+add_executable( client client.cpp )
 
 # Alternatively you could use ${Boost_LIBRARIES} here.
-target_link_libraries( run ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_COROUTINE_LIBRARY})
+target_link_libraries( server ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_COROUTINE_LIBRARY})
+target_link_libraries( client ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_COROUTINE_LIBRARY})

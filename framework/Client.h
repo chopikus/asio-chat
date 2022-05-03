@@ -10,7 +10,7 @@ namespace MyFramework {
     template<typename T>
     class ClientInterface {
         public:
-            ClientInterface(): socket_(context_) {}
+            ClientInterface() {}
 
             virtual ~ClientInterface() {
                 Disconnect();
@@ -18,11 +18,17 @@ namespace MyFramework {
 
             bool Connect(const std::string& host, const uint16_t port) {
                 try {
-                    connection_ = std::make_unique<Connection<T>>(); // TODO
                     tcp::resolver resolver(context_);
                     tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
-                    connection_ = std::make_unique<Connection<T>>(Connection<T>::Owner::CLIENT, context_, tcp::socket(context_), qMessagesIn);
+                    connection_ = std::make_unique<Connection<T>>(
+                        Connection<T>::Owner::CLIENT,
+                        context_,
+                        tcp::socket(context_), 
+                        qMessagesIn);
+                    
                     connection_->ConnectToServer(endpoints);
+
+                    threadContext_ = std::thread([this]() {context_.run();});
                 }
                 catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;
@@ -34,6 +40,10 @@ namespace MyFramework {
                 if (IsConnected()) {
                     connection_->Disconnect();
                 }
+                context_.stop();
+                if (threadContext_.joinable())
+                    threadContext_.join();
+                connection_.release();
             }
 
             bool IsConnected() {
@@ -46,10 +56,15 @@ namespace MyFramework {
             ThreadSafeDeque<OwnedMessage<T>>& IncomingQueue() {
                 return qMessagesIn;
             }
+
+            void Send(const Message<T>& message) {
+                if (IsConnected()) {
+                    connection_->Send(message);
+                }
+            }
         protected:
-            asio::io_context context_;
+            boost::asio::io_context context_;
             std::thread threadContext_;
-            tcp::socket socket_;
             std::unique_ptr<Connection<T>> connection_;
 
         private:

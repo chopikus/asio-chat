@@ -33,17 +33,18 @@ namespace MyFramework {
                 if (owner_ == Owner::SERVER) {
                     if (socket_.is_open()) {
                         connection_id = id;
+                        ReadHeader();
                     }
                 }
             }
             void ConnectToServer(const tcp::resolver::results_type& endpoints) {
                 if (owner_ == Owner::CLIENT) {
-                    asio::async_connect(socket_, endpoints, 
-                    [this](std::error_code ec, tcp::endpoint endpoint)) {
+                    boost::asio::async_connect(socket_, endpoints, 
+                    [this](std::error_code ec, tcp::endpoint endpoint) {
                         if (!ec) {
                             ReadHeader();
                         }
-                    }
+                    });
                 }
             }
 
@@ -51,14 +52,15 @@ namespace MyFramework {
                 return false;
             }
 
-            bool isConnected() const {
+            bool IsConnected() const {
                 return socket_.is_open();
             }
 
             void Send(const Message<T>& message) {
-                asio::post(context_, [this, message] () {
+                boost::asio::post(context_, [this, message] () {
                     bool wasQueueEmpty = qMessagesOut_.empty();
                     qMessagesOut_.push_back(message);
+                    std::cout << "trying to send message " << wasQueueEmpty << std::endl;
                     if (wasQueueEmpty) {
                         WriteHeader();
                     }
@@ -76,7 +78,8 @@ namespace MyFramework {
         private:
             //ASYNC
             void ReadHeader() {
-                boost::asio::async_read(socket_, tempMessage_.header, sizeof(MessageHeader<T>), 
+                boost::asio::async_read(socket_, 
+                boost::asio::buffer(&tempMessage_.header, sizeof(MessageHeader<T>)), 
                 [this](std::error_code ec, std::size_t length) {
                     if (!ec) {
                         if (tempMessage_.header.size > 0) {
@@ -86,7 +89,7 @@ namespace MyFramework {
                             AddToIncomingMessageQueue();
                         }
                     } else {
-                        std::cout << "[SERVER] [" << connection_id << "] Read Header fail!" << std::endl;
+                        std::cout << " [" << connection_id << "] Read Header fail!" << std::endl;
                         socket_.close();
                     }
                 });
@@ -94,12 +97,13 @@ namespace MyFramework {
 
             //ASYNC
             void ReadBody() {
-                asio::async_read(socket_, asio::buffer(tempMessage_.body.data(), tempMessage_.body.size()),
+                boost::asio::async_read(socket_, 
+                boost::asio::buffer(tempMessage_.body.data(), tempMessage_.body.size()),
                 [this](std::error_code ec, std::size_t length) {
                     if (!ec) {
                         AddToIncomingMessageQueue();
                     } else {
-                        std::cout << "[SERVER] [" << connection_id << "] Body Read Failed." << std::endl;
+                        std::cout << " [" << connection_id << "] Body Read Failed." << std::endl;
                         socket_.close();
                     }
                 });
@@ -107,7 +111,8 @@ namespace MyFramework {
 
             //ASYNC
             void WriteHeader() {
-                asio::async_write(socket_, asio::buffer(&qMessagesOut_.front().header, sizeof(MessageHeader<T>)), 
+                boost::asio::async_write(socket_, 
+                boost::asio::buffer(&qMessagesOut_.front().header, sizeof(MessageHeader<T>)), 
                 [this] (std::error_code ec, std::size_t length) {
                     if (!ec) {
                         if (qMessagesOut_.front().body.size() > 0) {
@@ -119,7 +124,7 @@ namespace MyFramework {
                             }
                         }
                     } else {
-                        std::cout << "[SERVER] [" << connection_id << "] Header Write Failed." << std::endl;
+                        std::cout << " [" << connection_id << "] Header Write Failed." << std::endl;
                         socket_.close();
                     }
                 });
@@ -127,7 +132,8 @@ namespace MyFramework {
 
             //ASYNC
             void WriteBody() {
-                asio::async_write(socket_, asio::buffer(qMessagesOut_.front().body.data(), qMessagesOut_.front().body.size()), 
+                boost::asio::async_write(socket_, 
+                boost::asio::buffer(qMessagesOut_.front().body.data(), qMessagesOut_.front().body.size()), 
                 [this] (std::error_code ec, std::size_t length) {
                     if (!ec) {
                         qMessagesOut_.pop_front();
@@ -135,15 +141,15 @@ namespace MyFramework {
                             WriteHeader();
                         }
                     } else {
-                        std::cout << "[SERVER] [" << connection_id << "] Body Write Failed." << std::endl;
+                        std::cout << " [" << connection_id << "] Body Write Failed." << std::endl;
                         socket_.close();
                     }
                 });
             }
             
             void AddToIncomingMessageQueue() {
-                if (owner == Owner::SERVER) {
-                    qMessagesIn_.push_back({shared_from_this(), tempMessage_});
+                if (owner_ == Owner::SERVER) {
+                    qMessagesIn_.push_back({this->shared_from_this(), tempMessage_});
                 } else {
                     qMessagesIn_.push_back({nullptr, tempMessage_});
                 }
