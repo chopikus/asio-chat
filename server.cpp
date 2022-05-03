@@ -2,7 +2,7 @@
 #include "framework/Framework.h"
 #include <string>
 
-enum class MessageType {
+enum class MessageType : uint32_t {
     NEW_MESSAGE,
     PERSON_LEFT,
     PERSON_CONNECTED,

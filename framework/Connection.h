@@ -29,7 +29,7 @@ namespace MyFramework {
                 
             }
 
-            void ConnectToClient(uint32_t id) {
+            void ConnectToClient(uint32_t id = 0) {
                 if (owner_ == Owner::SERVER) {
                     if (socket_.is_open()) {
                         connection_id = id;
@@ -48,8 +48,10 @@ namespace MyFramework {
                 }
             }
 
-            bool Disconnect() {
-                return false;
+            void Disconnect() {
+                if (IsConnected()) {
+                    boost::asio::post(context_, [this](){socket_.close();});
+                }
             }
 
             bool IsConnected() const {
@@ -90,6 +92,7 @@ namespace MyFramework {
                         }
                     } else {
                         std::cout << " [" << connection_id << "] Read Header fail!" << std::endl;
+                        std::cout << ec.value() << ' ' << ec.message() << std::endl;
                         socket_.close();
                     }
                 });
@@ -104,6 +107,7 @@ namespace MyFramework {
                         AddToIncomingMessageQueue();
                     } else {
                         std::cout << " [" << connection_id << "] Body Read Failed." << std::endl;
+                        std::cout << ec.value() << ' ' << ec.message() << std::endl;
                         socket_.close();
                     }
                 });
@@ -114,12 +118,13 @@ namespace MyFramework {
                 boost::asio::async_write(socket_, 
                 boost::asio::buffer(&qMessagesOut_.front().header, sizeof(MessageHeader<T>)), 
                 [this] (std::error_code ec, std::size_t length) {
+                    std::cout << "Written header" << std::endl;
                     if (!ec) {
                         if (qMessagesOut_.front().body.size() > 0) {
                             WriteBody();
                         } else {
                             qMessagesOut_.pop_front();
-                            if (qMessagesOut_.empty()) {
+                            if (!qMessagesOut_.empty()) {
                                 WriteHeader();
                             }
                         }
@@ -135,6 +140,7 @@ namespace MyFramework {
                 boost::asio::async_write(socket_, 
                 boost::asio::buffer(qMessagesOut_.front().body.data(), qMessagesOut_.front().body.size()), 
                 [this] (std::error_code ec, std::size_t length) {
+                    std::cout << "Written body" << std::endl;
                     if (!ec) {
                         qMessagesOut_.pop_front();
                         if (!qMessagesOut_.empty()) {

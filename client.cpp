@@ -53,6 +53,32 @@ int main(int argc, char* argv[]) {
 
     boost::asio::async_read(stream, boost::asio::buffer(buf), read_handler);
 
-    io_context.run();
+    std::thread t([&](){io_context.run();});
+
+    while (!closing) {
+        if (client.IsConnected()) {
+            auto& q = client.IncomingQueue();
+            while (!q.empty()) {
+                MyFramework::Message<MessageType> message = q.pop_front().message;
+                switch (message.header.id) {
+                    case MessageType::SERVER_PING: {
+                        std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
+                        std::chrono::system_clock::time_point timeThen;
+                        message >> timeThen;
+                        // assuming the system clock hasn't changed while pinging
+                        double elapsed_time_ms = std::chrono::duration<double, std::milli>(timeNow - timeThen).count();
+                        std::cout << "Ping is " << (long long) elapsed_time_ms << std::endl;
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+        }
+    }
+    std::cout << "ok" << std::endl;
+    io_context.stop();
+    if (t.joinable())
+        t.join();
     return 0;
 }

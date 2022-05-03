@@ -12,14 +12,20 @@ namespace MyFramework {
         public:
             ServerInterface(uint16_t port) : asioAcceptor(asioContext, tcp::endpoint(tcp::v4(), port)) {}
             virtual ~ServerInterface() {
-
+                Stop();
             }
 
             bool Start() {
                 std::cout << " I Started!" << std::endl;
-                WaitForClientConnection();
-                threadContext = std::thread([this]() { asioContext.run();});
-                return false;
+                try {
+                    WaitForClientConnection();
+                    threadContext = std::thread([this]() { asioContext.run();});
+                }
+                catch (std::exception& e) {
+                    std::cerr << "Exception: " << e.what() << std::endl;
+                    return false;
+                }
+                return true;
             }
 
             void Stop() {
@@ -55,6 +61,7 @@ namespace MyFramework {
             void MessageClient(std::shared_ptr<Connection<T>> client, const Message<T>& msg) {
                 if (client && client->IsConnected()) {
                     client->Send(msg);
+                    std::cout << "SENDING MESSAGE" << std::endl;
                 } else {
                     OnClientDisconnect(client);
                     client.reset();
@@ -63,16 +70,16 @@ namespace MyFramework {
             }
 
             void MessageAllClients(const Message<T>& message, std::shared_ptr<Connection<T>> ignore_client = nullptr) {
-                bool invalidClientExists = true;
+                bool invalidClientExists = false;
                 for (auto& client : dequeConnections) {
                     if (client && client->IsConnected()){
                         if (client != ignore_client) {
                             client->Send(message);
-                        } else {
-                            OnClientDisconnect(client);
-                            client.reset();
-                            invalidClientExists = true;
                         }
+                    } else {
+                        OnClientDisconnect(client);
+                        client.reset();
+                        invalidClientExists = true;
                     }
                 }
                 if (invalidClientExists) {
