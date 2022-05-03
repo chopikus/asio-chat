@@ -20,8 +20,9 @@ namespace MyFramework {
                 try {
                     connection_ = std::make_unique<Connection<T>>(); // TODO
                     tcp::resolver resolver(context_);
-                    
-
+                    tcp::resolver::results_type endpoints = resolver.resolve(host, std::to_string(port));
+                    connection_ = std::make_unique<Connection<T>>(Connection<T>::Owner::CLIENT, context_, tcp::socket(context_), qMessagesIn);
+                    connection_->ConnectToServer(endpoints);
                 }
                 catch (std::exception& e) {
                     std::cerr << e.what() << std::endl;

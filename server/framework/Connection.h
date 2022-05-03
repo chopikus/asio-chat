@@ -36,8 +36,15 @@ namespace MyFramework {
                     }
                 }
             }
-            void ConnectToServer() {
-                
+            void ConnectToServer(const tcp::resolver::results_type& endpoints) {
+                if (owner_ == Owner::CLIENT) {
+                    asio::async_connect(socket_, endpoints, 
+                    [this](std::error_code ec, tcp::endpoint endpoint)) {
+                        if (!ec) {
+                            ReadHeader();
+                        }
+                    }
+                }
             }
 
             bool Disconnect() {
@@ -48,7 +55,15 @@ namespace MyFramework {
                 return socket_.is_open();
             }
 
-            bool Send(const Message<T>& message);
+            void Send(const Message<T>& message) {
+                asio::post(context_, [this, message] () {
+                    bool wasQueueEmpty = qMessagesOut_.empty();
+                    qMessagesOut_.push_back(message);
+                    if (wasQueueEmpty) {
+                        WriteHeader();
+                    }
+                });
+            }
             
         protected:
             tcp::socket socket_;
