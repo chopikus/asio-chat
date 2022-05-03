@@ -1,6 +1,7 @@
 {
     "cmake.sourceDirectory": "${workspaceFolder}/server",
     "files.associations": {
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "memory": "cpp"
     }
 }
