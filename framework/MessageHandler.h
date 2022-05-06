@@ -6,7 +6,7 @@ namespace MyFramework {
     template <typename T>
     struct MessageHeader {
         T id{};
-        uint32_t size = 0;
+        uint32_t dataSize = 0;
     };
 
     template<typename T>
@@ -19,7 +19,7 @@ namespace MyFramework {
         }
 
         friend std::ostream& operator << (std::ostream& os, const Message<T>& msg) {
-            os << "ID: " << int(msg.header.id) << " Size: " << msg.header.size;
+            os << "ID: " << int(msg.header.id) << " DataSize: " << msg.header.dataSize;
             return os;
         }
 
@@ -33,7 +33,7 @@ namespace MyFramework {
 
             std::memcpy(message.body.data() + previous_size, &data, sizeof(DataType));
 
-            message.header.size = message.size();
+            message.header.dataSize = message.body.size();
             
             return message;
         }

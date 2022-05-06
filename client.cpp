@@ -3,7 +3,7 @@
 #include "framework/Framework.h"
 #include <string>
 
-enum class MessageType {
+enum class MessageType : uint32_t {
     NEW_MESSAGE,
     PERSON_LEFT,
     PERSON_CONNECTED,
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]) {
                         message >> timeThen;
                         // assuming the system clock hasn't changed while pinging
                         double elapsed_time_ms = std::chrono::duration<double, std::milli>(timeNow - timeThen).count();
-                        std::cout << "Ping is " << (long long) elapsed_time_ms << std::endl;
+                        std::cout << "Ping is " << elapsed_time_ms << " milliseconds" << std::endl;
                         break;
                     }
                     default:

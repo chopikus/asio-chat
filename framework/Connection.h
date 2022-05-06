@@ -62,7 +62,6 @@ namespace MyFramework {
                 boost::asio::post(context_, [this, message] () {
                     bool wasQueueEmpty = qMessagesOut_.empty();
                     qMessagesOut_.push_back(message);
-                    std::cout << "trying to send message " << wasQueueEmpty << std::endl;
                     if (wasQueueEmpty) {
                         WriteHeader();
                     }
@@ -84,8 +83,8 @@ namespace MyFramework {
                 boost::asio::buffer(&tempMessage_.header, sizeof(MessageHeader<T>)), 
                 [this](std::error_code ec, std::size_t length) {
                     if (!ec) {
-                        if (tempMessage_.header.size > 0) {
-                            tempMessage_.body.resize(tempMessage_.header.size);
+                        if (tempMessage_.header.dataSize > 0) {
+                            tempMessage_.body.resize(tempMessage_.header.dataSize);
                             ReadBody();
                         } else {
                             AddToIncomingMessageQueue();
@@ -118,7 +117,6 @@ namespace MyFramework {
                 boost::asio::async_write(socket_, 
                 boost::asio::buffer(&qMessagesOut_.front().header, sizeof(MessageHeader<T>)), 
                 [this] (std::error_code ec, std::size_t length) {
-                    std::cout << "Written header" << std::endl;
                     if (!ec) {
                         if (qMessagesOut_.front().body.size() > 0) {
                             WriteBody();
@@ -136,11 +134,10 @@ namespace MyFramework {
             }
 
             //ASYNC
-            void WriteBody() {
+            void WriteBody() {          
                 boost::asio::async_write(socket_, 
                 boost::asio::buffer(qMessagesOut_.front().body.data(), qMessagesOut_.front().body.size()), 
                 [this] (std::error_code ec, std::size_t length) {
-                    std::cout << "Written body" << std::endl;
                     if (!ec) {
                         qMessagesOut_.pop_front();
                         if (!qMessagesOut_.empty()) {
