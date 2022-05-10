@@ -13,11 +13,17 @@ namespace MyFramework {
             void push_back(const T& item) {
                 std::scoped_lock lock(muxDeque);
                 deque.push_back(item);
+
+                std::unique_lock<std::mutex> cvLock(muxBlocking);
+                cvBlocking.notify_one();
             }
 
             void push_front(const T& item) {
                 std::scoped_lock lock(muxDeque);
                 deque.push_front(item);
+
+                std::unique_lock<std::mutex> cvLock(muxBlocking);
+                cvBlocking.notify_one();
             }
 
             const T& front() {
@@ -59,9 +65,19 @@ namespace MyFramework {
                 deque.clear();
             }
 
+            void wait() {
+                while (empty()) {
+                    std::unique_lock<std::mutex> lock(muxBlocking);
+                    cvBlocking.wait(lock);
+                }
+            }
+
         protected:
             std::mutex muxDeque;
             std::deque<T> deque;
+
+            std::mutex muxBlocking;
+            std::condition_variable cvBlocking;
     };
 }
 #endif

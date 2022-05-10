@@ -88,7 +88,9 @@ namespace MyFramework {
                 }
             }
 
-            void Update(size_t maxMessages = std::numeric_limits<size_t>::max()) {
+            void Update(size_t maxMessages = std::numeric_limits<size_t>::max(), bool wait = true) {
+                if (wait)
+                    qMessagesIn.wait();
                 size_t passedMessages = 0;
                 while (passedMessages < maxMessages && !qMessagesIn.empty()) {
                     auto ownedMessage = qMessagesIn.pop_front();

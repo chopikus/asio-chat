@@ -4,10 +4,10 @@
 #include <string>
 
 enum class MessageType : uint32_t {
-    NEW_MESSAGE,
+    NEW_CHAT_MESSAGE,
     PERSON_LEFT,
     PERSON_CONNECTED,
-    SERVER_PING
+    SERVER_PING,
 };
 
 class CustomClient : public MyFramework::ClientInterface<MessageType> {
@@ -17,6 +17,13 @@ class CustomClient : public MyFramework::ClientInterface<MessageType> {
             message.header.id = MessageType::SERVER_PING;
             std::chrono::system_clock::time_point timeNow = std::chrono::system_clock::now();
             message << timeNow;
+            Send(message);
+        }
+
+        void SendMessage() {
+            MyFramework::Message<MessageType> message;
+            message.header.id = MessageType::NEW_CHAT_MESSAGE;
+            message << connection_->connection_id;
             Send(message);
         }
 };
@@ -39,12 +46,21 @@ int main(int argc, char* argv[]) {
                 std::cerr << "exit with " << ec.message() << std::endl;
             } else {
                 if (len == 1) {
-                    if (buf[0] == 'p') {
-                        std::cout << "OK, pinging the server" << std::endl;
-                        client.PingServer();
-                    } else if (buf[0] == 'q') {
-                        std::cout << "OK, Client down" << std::endl;
-                        closing = true;
+                    switch (buf[0]) {
+                        case 'p':
+                            std::cout << "OK, pinging the server" << std::endl;
+                            client.PingServer();
+                            break;
+                        case 'q':
+                            std::cout << "OK, client down" << std::endl;
+                            closing = true;
+                            break;
+                        case 'a':
+                            std::cout << "OK, messaging all clients" << std::endl;
+                            client.SendMessage();
+                            break;
+                        default:
+                            break;
                     }
                 }
                 boost::asio::async_read(stream, boost::asio::buffer(buf), read_handler);
@@ -68,6 +84,13 @@ int main(int argc, char* argv[]) {
                         // assuming the system clock hasn't changed while pinging
                         double elapsed_time_ms = std::chrono::duration<double, std::milli>(timeNow - timeThen).count();
                         std::cout << "Ping is " << elapsed_time_ms << " milliseconds" << std::endl;
+                        break;
+                    }
+                    case MessageType::NEW_CHAT_MESSAGE: {
+                        uint32_t client_id;
+
+                        message >> client_id;
+                        std::cout << "Messaging all clients from " << client_id << std::endl;
                         break;
                     }
                     default:
